@@ -3,8 +3,6 @@ import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import tensorflow as tf
-from PIL import Image
-import io
 import cv2
 import mediapipe as mp
 import asyncio
@@ -48,45 +46,37 @@ def predict_sign(image_bytes):
     if img_cv is None:
         return [{'sign': 'nothing', 'conf': 0.0}]
 
-    # Skin color detect karo HSV se
     img_hsv = cv2.cvtColor(img_cv, cv2.COLOR_BGR2HSV)
-    
-    # Skin color range
     lower_skin = np.array([0, 20, 70], dtype=np.uint8)
     upper_skin = np.array([20, 255, 255], dtype=np.uint8)
     mask = cv2.inRange(img_hsv, lower_skin, upper_skin)
-    
-    # Noise remove karo
-    kernel = np.ones((3,3), np.uint8)
+
+    kernel = np.ones((3, 3), np.uint8)
     mask = cv2.dilate(mask, kernel, iterations=4)
     mask = cv2.erode(mask, kernel, iterations=2)
-    
-    # Contours dhundho
+
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    
+
     if not contours:
         return [{'sign': 'nothing', 'conf': 0.0}]
-    
-    # Sabse bada contour lo (haath hoga)
+
     max_contour = max(contours, key=cv2.contourArea)
-    
+
     if cv2.contourArea(max_contour) < 3000:
         return [{'sign': 'nothing', 'conf': 0.0}]
-    
-    # Bounding box nikalo
+
     x, y, w, h = cv2.boundingRect(max_contour)
     pad = 20
     x1 = max(0, x - pad)
     y1 = max(0, y - pad)
     x2 = min(img_cv.shape[1], x + w + pad)
     y2 = min(img_cv.shape[0], y + h + pad)
-    
+
     hand_crop = img_cv[y1:y2, x1:x2]
-    
+
     if hand_crop.size == 0:
         return [{'sign': 'nothing', 'conf': 0.0}]
-    
-    # White background pe paste karo
+
     white_bg = np.ones((224, 224, 3), dtype=np.uint8) * 255
     crop_h, crop_w = hand_crop.shape[:2]
     scale = min(200 / max(crop_w, 1), 200 / max(crop_h, 1))
@@ -95,7 +85,7 @@ def predict_sign(image_bytes):
     hand_scaled = cv2.resize(hand_crop, (new_w, new_h))
     x_off = (224 - new_w) // 2
     y_off = (224 - new_h) // 2
-    white_bg[y_off:y_off+new_h, x_off:x_off+new_w] = hand_scaled
+    white_bg[y_off:y_off + new_h, x_off:x_off + new_w] = hand_scaled
     img_final = cv2.cvtColor(white_bg, cv2.COLOR_BGR2RGB)
 
     arr = np.array(img_final, dtype=np.float32) / 255.0
@@ -103,7 +93,16 @@ def predict_sign(image_bytes):
     pred = model.predict(arr, verbose=0)
 
     top3_idx = np.argsort(pred[0])[-3:][::-1]
-    top3 = [{'sign': idx_to_class[i], 'conf': round(float(pred[0][i])*100, 1)} for i in top3_idx]
+    top3 = [{'sign': idx_to_class[i], 'conf': round(float(pred[0][i]) * 100, 1)} for i in top3_idx]
+
+    # blank ko nothing treat karo
+    if top3[0]['sign'] == 'blank':
+        return [{'sign': 'nothing', 'conf': 0.0}]
+
+    # Low confidence pe nothing return karo
+    if top3[0]['conf'] < 70:
+        return [{'sign': 'nothing', 'conf': 0.0}]
+
     return top3
 
 @app.get("/")

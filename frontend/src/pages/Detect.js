@@ -1,20 +1,18 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 
 const WS_URL = 'ws://localhost:8000/ws';
-const SEND_INTERVAL = 300;       // ms — kitni baar frame bhejo
-const CONFIRM_FRAMES = 3;        // kitne consecutive frames ke baad letter add karo
-const COOLDOWN_MS = 1200;        // ek letter add hone ke baad kitna wait karo
+const SEND_INTERVAL = 500;
+const CONFIRM_FRAMES = 5;
+const COOLDOWN_MS = 2000;
 
 function Detect() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const wsRef = useRef(null);
   const intervalRef = useRef(null);
-
-  // ✅ FIX 1: Duplicate letters rokne ke liye yeh refs
-  const signBufferRef = useRef([]);      // last N predictions ka buffer
-  const lastAddedSignRef = useRef('');   // pichli baar kaunsa letter add hua
-  const lastAddedTimeRef = useRef(0);    // kab add hua
+  const signBufferRef = useRef([]);
+  const lastAddedSignRef = useRef('');
+  const lastAddedTimeRef = useRef(0);
 
   const [sign, setSign] = useState('—');
   const [confidence, setConfidence] = useState(0);
@@ -29,21 +27,16 @@ function Detect() {
     setConfidence(data.confidence);
     setTop3(data.top3 || []);
 
-    if (data.sign === 'nothing' || data.confidence < 85) {
+    if (data.sign === 'nothing' || data.sign === 'blank' || data.confidence < 95) {
       signBufferRef.current = [];
       return;
     }
 
-    // Buffer mein add karo
     signBufferRef.current.push(data.sign);
     if (signBufferRef.current.length > CONFIRM_FRAMES) {
       signBufferRef.current.shift();
     }
 
-    // Sirf tab add karo jab:
-    // 1. Buffer ke saare frames same sign ke hain
-    // 2. Cooldown khatam ho gayi ho
-    // 3. Ya naya alag sign ho
     const allSame = signBufferRef.current.length === CONFIRM_FRAMES &&
       signBufferRef.current.every(s => s === data.sign);
 
@@ -77,8 +70,6 @@ function Detect() {
 
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-
-      // ✅ FIX 2: Canvas mein bhi mirror karo taaki model sahi se dekhe
       ctx.save();
       ctx.scale(-1, 1);
       ctx.drawImage(videoRef.current, -224, 0, 224, 224);
@@ -149,7 +140,6 @@ function Detect() {
   return (
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
 
-      {/* Status bar */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: running ? 'var(--accent)' : 'var(--text2)' }}></div>
         <span style={{ fontSize: '13px', color: 'var(--text2)' }}>{status}</span>
@@ -157,7 +147,6 @@ function Detect() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '24px' }}>
 
-        {/* Left — Camera */}
         <div>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', position: 'relative', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <video ref={videoRef} autoPlay muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: running ? 'block' : 'none', transform: 'scaleX(-1)' }} />
@@ -167,7 +156,7 @@ function Detect() {
                 <div style={{ fontSize: '14px' }}>Camera feed will appear here</div>
               </div>
             )}
-            {['tl','tr','bl','br'].map(c => (
+            {['tl', 'tr', 'bl', 'br'].map(c => (
               <div key={c} style={{
                 position: 'absolute', width: '16px', height: '16px',
                 top: c.includes('t') ? '12px' : 'auto',
@@ -187,7 +176,6 @@ function Detect() {
 
           <canvas ref={canvasRef} width={224} height={224} style={{ display: 'none' }} />
 
-          {/* Controls */}
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button onClick={running ? stopCamera : startCamera}
               style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: running ? '#EF4444' : 'var(--accent)', color: running ? '#fff' : 'var(--bg1)', fontSize: '14px', fontWeight: '600' }}>
@@ -203,17 +191,15 @@ function Detect() {
             </button>
           </div>
 
-          {/* Text output */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginTop: '16px' }}>
             <div style={{ fontSize: '11px', color: 'var(--text2)', letterSpacing: '2px', marginBottom: '10px' }}>TRANSLATION OUTPUT</div>
             <div style={{ fontSize: '24px', fontWeight: '500', letterSpacing: '3px', minHeight: '40px', color: 'var(--text1)' }}>
               {text || <span style={{ color: 'var(--text2)', fontSize: '16px' }}>Start signing...</span>}
-              {running && <span style={{ color: 'var(--accent)', animation: 'blink 1s infinite' }}>|</span>}
+              {running && <span style={{ color: 'var(--accent)' }}>|</span>}
             </div>
           </div>
         </div>
 
-        {/* Right Panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
             <div style={{ fontSize: '11px', color: 'var(--text2)', letterSpacing: '2px', marginBottom: '8px' }}>DETECTED SIGN</div>
@@ -258,4 +244,4 @@ function Detect() {
   );
 }
 
-export default Detect;
+export default Detect;        
