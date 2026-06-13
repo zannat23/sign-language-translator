@@ -1,24 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Hands } from '@mediapipe/hands';
 
-const playHappySound = () => {
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const notes = [523, 659, 784];
-  notes.forEach((freq, i) => {
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + i * 0.08);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4 + i * 0.08);
-    oscillator.start(audioCtx.currentTime + i * 0.08);
-    oscillator.stop(audioCtx.currentTime + 0.5 + i * 0.08);
-  });
-};
-
 const CONFIRM_FRAMES = 7;
 const COOLDOWN_MS = 3500;
 
@@ -54,7 +36,6 @@ function classifyASL(lm) {
   const thumbPinkTouch = touching(lm, 4, 20, 0.09);
   const idxMidTouch    = touching(lm, 8, 12, 0.06);
 
-  const thumbUp   = lm[4].y < lm[3].y && lm[4].y < lm[2].y;
   const thumbSide = lm[4].x < lm[3].x;
   const handWidth  = dist2(lm[5], lm[17]);
   const handHeight = dist2(lm[0], lm[9]);
@@ -115,6 +96,7 @@ function Detect() {
   const signBufferRef = useRef([]);
   const lastAddedSignRef = useRef('');
   const lastAddedTimeRef = useRef(0);
+  const audioCtxRef = useRef(null);
 
   const [sign, setSign] = useState('—');
   const [confidence, setConfidence] = useState(0);
@@ -124,6 +106,38 @@ function Detect() {
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState('Click "Start Camera" to begin');
   const [loading, setLoading] = useState(false);
+
+  const initAudio = useCallback(() => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+  }, []);
+
+  const playHappySound = useCallback(() => {
+    try {
+      const audioCtx = audioCtxRef.current;
+      if (!audioCtx) return;
+      const notes = [523, 659, 784];
+      notes.forEach((freq, i) => {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + i * 0.08);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4 + i * 0.08);
+        oscillator.start(audioCtx.currentTime + i * 0.08);
+        oscillator.stop(audioCtx.currentTime + 0.5 + i * 0.08);
+      });
+    } catch(e) {
+      console.log('Sound error:', e);
+    }
+  }, []);
 
   const handlePrediction = useCallback(([detectedSign, conf]) => {
     setSign(detectedSign === 'nothing' ? '—' : detectedSign.toUpperCase());
@@ -151,7 +165,7 @@ function Detect() {
         playHappySound();
       }
     }
-  }, []);
+  }, [playHappySound]);
 
   const drawLandmarks = useCallback((ctx, lm, w, h) => {
     const connections = [
@@ -176,6 +190,7 @@ function Detect() {
   }, []);
 
   const startCamera = async () => {
+    initAudio();
     setLoading(true);
     setStatus('Loading hand model…');
     try {
@@ -274,7 +289,9 @@ function Detect() {
             {running && <div style={{ position: 'absolute', top: '12px', right: '40px', fontSize: '11px', color: 'var(--accent)', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px' }}>● LIVE</div>}
           </div>
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-            <button onClick={running ? stopCamera : startCamera} disabled={loading}
+            <button
+              onClick={() => { initAudio(); running ? stopCamera() : startCamera(); }}
+              disabled={loading}
               style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: running ? '#EF4444' : 'var(--accent)', color: running ? '#fff' : 'var(--bg1)', fontSize: '14px', fontWeight: '600', opacity: loading ? 0.6 : 1 }}>
               {loading ? 'Loading…' : running ? 'Stop Camera' : 'Start Camera'}
             </button>
