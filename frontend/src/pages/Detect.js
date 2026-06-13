@@ -28,26 +28,48 @@ function classifyASL(lm) {
   const tmb  = thumbExtended(lm);
   const extCount = [idx, mid, ring, pink].filter(Boolean).length;
   const imSpread = dist2(lm[8], lm[12]) > 0.12;
-  const mrSpread = dist2(lm[12], lm[16]) > 0.10;
 
-  const thumbIdxTouch  = touching(lm, 4, 8,  0.07);
-  const thumbMidTouch  = touching(lm, 4, 12, 0.08);
-  const thumbRingTouch = touching(lm, 4, 16, 0.09);
-  const thumbPinkTouch = touching(lm, 4, 20, 0.09);
-  const idxMidTouch    = touching(lm, 8, 12, 0.06);
+  const thumbIdxTouch  = touching(lm, 4, 8,  0.08);
+  const thumbMidTouch  = touching(lm, 4, 12, 0.09);
+  const thumbRingTouch = touching(lm, 4, 16, 0.10);
+  const thumbPinkTouch = touching(lm, 4, 20, 0.10);
+  const idxMidTouch    = touching(lm, 8, 12, 0.07);
 
   const thumbSide = lm[4].x < lm[3].x;
   const handWidth  = dist2(lm[5], lm[17]);
   const handHeight = dist2(lm[0], lm[9]);
   const isHorizontal = handWidth > handHeight * 1.1;
 
-  if (extCount === 4 && tmb)  return ['space', 90];
-  if (extCount === 4 && !tmb && !imSpread) return ['b', 90];
-  if (extCount === 4 && !tmb && imSpread)  return ['space', 85];
+  // Thumb tip positions
+  const thumbTipY = lm[4].y;
+  const thumbTipX = lm[4].x;
+  const wristY = lm[0].y;
+  const indexMcpY = lm[5].y;
+  const indexMcpX = lm[5].x;
+  const pinkyMcpX = lm[17].x;
 
+  // C — curved hand, all fingers slightly bent, thumb open
+  const idxPartial = dist3(lm[8], lm[0]) > dist3(lm[6], lm[0]) * 0.8 &&
+                     dist3(lm[8], lm[0]) < dist3(lm[6], lm[0]) * 1.3;
+  const midPartial = dist3(lm[12], lm[0]) > dist3(lm[10], lm[0]) * 0.8 &&
+                     dist3(lm[12], lm[0]) < dist3(lm[10], lm[0]) * 1.3;
+  const cShape = idxPartial && midPartial && !thumbIdxTouch && tmb;
+  if (cShape && extCount <= 2) return ['c', 82];
+
+  // SPACE — all 4 fingers + thumb extended
+  if (extCount === 4 && tmb) return ['space', 90];
+
+  // B — 4 fingers up, thumb tucked, fingers together
+  if (extCount === 4 && !tmb && !imSpread) return ['b', 90];
+
+  // 4 fingers spread = space
+  if (extCount === 4 && !tmb && imSpread) return ['space', 85];
+
+  // W — 3 fingers
   if (idx && mid && ring && !pink && !tmb) return ['w', 88];
   if (idx && mid && ring && !pink && tmb)  return ['w', 85];
 
+  // 2 fingers
   if (idx && mid && !ring && !pink) {
     if (idxMidTouch)  return ['r', 84];
     if (isHorizontal && !tmb) return ['h', 84];
@@ -57,37 +79,72 @@ function classifyASL(lm) {
     return ['u', 88];
   }
 
+  // Index only
   if (idx && !mid && !ring && !pink) {
-    if (thumbMidTouch || thumbRingTouch) return ['d', 86];
-    if (tmb && isHorizontal)  return ['g', 82];
+    // G — index pointing sideways + thumb out horizontal
+    if (tmb && isHorizontal && lm[8].x < lm[5].x) return ['g', 84];
+    if (tmb && isHorizontal) return ['g', 82];
+    // L — index up + thumb out
     if (tmb && !isHorizontal) return ['l', 88];
-    if (!tmb) return ['d', 80];
+    // D — index up, thumb touches middle
+    if (thumbMidTouch || thumbRingTouch) return ['d', 86];
+    return ['d', 80];
   }
 
+  // Pinky only
   if (!idx && !mid && !ring && pink) {
-    if (tmb)  return ['y', 90];
-    return ['i', 88];
+    // Y — pinky + thumb
+    if (tmb) return ['y', 90];
+    // I — pinky only, no thumb
+    return ['i', 90];
   }
 
+  // Index + Pinky (no mid, no ring)
+  if (idx && !mid && !ring && pink) {
+    return ['i', 80]; // could be ILY but treat as i
+  }
+
+  // Closed fist
   if (extCount === 0) {
-    if (thumbIdxTouch && thumbMidTouch) return ['o', 86];
-    if (thumbIdxTouch) return ['f', 84];
-    if (dist2(lm[4], lm[6]) < 0.07)  return ['t', 82];
-    if (dist2(lm[4], lm[7]) < 0.10 && lm[4].y > lm[7].y) return ['n', 80];
-    if (dist2(lm[4], lm[10]) < 0.12 && lm[4].y > lm[10].y) return ['m', 78];
-    if (thumbSide && lm[4].y < lm[8].y) return ['a', 88];
-    if (!thumbSide && lm[4].y < lm[8].y) return ['s', 84];
-    if (lm[8].y > lm[5].y && lm[12].y > lm[9].y) return ['e', 82];
-    return ['a', 74];
+    // O — thumb and index touch making circle
+    if (thumbIdxTouch && !thumbMidTouch) return ['o', 88];
+
+    // F — thumb + index touch, rest up
+    if (thumbIdxTouch && mid && ring && pink) return ['f', 86];
+
+    // T — thumb between index and middle
+    if (dist2(lm[4], lm[6]) < 0.07) return ['t', 84];
+
+    // N — thumb over middle finger
+    if (dist2(lm[4], lm[10]) < 0.09 && lm[4].y > lm[9].y &&
+        lm[4].y < lm[7].y) return ['n', 82];
+
+    // M — thumb over ring/middle (3 fingers over thumb)
+    if (dist2(lm[4], lm[14]) < 0.10 && lm[4].y > lm[13].y) return ['m', 80];
+
+    // X — hooked index finger
+    if (dist2(lm[8], lm[6]) < 0.06 && !idx) return ['x', 78];
+
+    // A — thumb to side, fist
+    if (thumbSide && lm[4].y < lm[8].y && !thumbIdxTouch) return ['a', 88];
+
+    // S — thumb over fingers
+    if (!thumbSide && lm[4].y < lm[9].y) return ['s', 84];
+
+    // E — fingers bent, thumb tucked under
+    if (lm[8].y > lm[5].y && lm[12].y > lm[9].y && lm[4].y > lm[8].y) return ['e', 82];
+
+    return ['a', 70];
   }
 
+  // F — middle ring pink up, thumb+index touch
   if (!idx && mid && ring && pink && thumbIdxTouch) return ['f', 86];
+
+  // Q — index pointing down + thumb
   if (idx && !mid && !ring && !pink && tmb && lm[8].y > lm[5].y + 0.1) return ['q', 78];
-  if (!idx && !mid && !ring && !pink && dist2(lm[8], lm[6]) < 0.06) return ['x', 74];
 
   return ['nothing', 0];
 }
-
 function Detect() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
