@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Hands } from '@mediapipe/hands';
 
-const CONFIRM_FRAMES = 6;
-const COOLDOWN_MS = 3000;
+const CONFIRM_FRAMES = 7;
+const COOLDOWN_MS = 3500;
 
 function dist3(a, b) {
   return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2);
