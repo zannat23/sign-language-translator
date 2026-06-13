@@ -27,49 +27,77 @@ function classifyASL(lm) {
   const pink = isExtended(lm, 20, 18);
   const tmb  = thumbExtended(lm);
   const extCount = [idx, mid, ring, pink].filter(Boolean).length;
-  const imSpread = dist2(lm[8], lm[12]) > 0.1;
-  const thumbIdxTouch  = touching(lm, 4, 8,  0.08);
-  const thumbMidTouch  = touching(lm, 4, 12, 0.09);
-  const thumbRingTouch = touching(lm, 4, 16, 0.10);
-  const idxMidTouch    = touching(lm, 8, 12, 0.07);
-  const idxCurl  = lm[8].y  - lm[6].y;
-  const thumbUp   = lm[4].y < lm[3].y;
-  const thumbSide = Math.abs(lm[4].x - lm[3].x) > Math.abs(lm[4].y - lm[3].y);
+  const imSpread = dist2(lm[8], lm[12]) > 0.12;
+  const mrSpread = dist2(lm[12], lm[16]) > 0.10;
+
+  const thumbIdxTouch  = touching(lm, 4, 8,  0.07);
+  const thumbMidTouch  = touching(lm, 4, 12, 0.08);
+  const thumbRingTouch = touching(lm, 4, 16, 0.09);
+  const thumbPinkTouch = touching(lm, 4, 20, 0.09);
+  const idxMidTouch    = touching(lm, 8, 12, 0.06);
+
+  const thumbUp   = lm[4].y < lm[3].y && lm[4].y < lm[2].y;
+  const thumbSide = lm[4].x < lm[3].x;
   const handWidth  = dist2(lm[5], lm[17]);
   const handHeight = dist2(lm[0], lm[9]);
-  const isHorizontal = handWidth > handHeight * 0.9;
+  const isHorizontal = handWidth > handHeight * 1.1;
 
-  if (extCount === 4 && tmb)            return ['space', 90];
+  // All 4 fingers extended
+  if (extCount === 4 && tmb)  return ['space', 90];
   if (extCount === 4 && !tmb && !imSpread) return ['b', 90];
-  if (idx && mid && ring && !pink)      return ['w', 88];
-  if (idx && mid && !ring && !pink && imSpread && !tmb) return ['v', 90];
-  if (idx && mid && !ring && !pink && idxMidTouch)      return ['r', 82];
-  if (idx && mid && !ring && !pink && isHorizontal)     return ['h', 84];
-  if (idx && mid && !ring && !pink && tmb && imSpread)  return ['k', 82];
-  if (idx && mid && !ring && !pink && tmb && lm[8].y > lm[5].y) return ['p', 80];
-  if (idx && mid && !ring && !pink && !imSpread && !tmb) return ['u', 88];
-  if (idx && !mid && !ring && !pink && (thumbMidTouch || thumbRingTouch)) return ['d', 86];
-  if (idx && !mid && !ring && !pink && tmb && isHorizontal)  return ['g', 82];
-  if (idx && !mid && !ring && !pink && tmb && !isHorizontal) return ['l', 88];
-  if (!idx && !mid && !ring && !pink && idxCurl > -0.02 && idxCurl < 0.05) return ['x', 72];
-  if (idx && !mid && !ring && !pink && !tmb) return ['z', 74];
-  if (!idx && !mid && !ring && pink && !tmb) return ['i', 90];
-  if (!idx && !mid && !ring && pink && tmb)  return ['y', 90];
-  if (!idx && !mid && !ring && pink)         return ['j', 72];
+  if (extCount === 4 && !tmb && imSpread)  return ['space', 85];
 
+  // 3 fingers
+  if (idx && mid && ring && !pink && !tmb) return ['w', 88];
+  if (idx && mid && ring && !pink && tmb)  return ['w', 85];
+
+  // 2 fingers
+  if (idx && mid && !ring && !pink) {
+    if (idxMidTouch)  return ['r', 84];
+    if (isHorizontal && !tmb) return ['h', 84];
+    if (tmb && imSpread)  return ['k', 82];
+    if (tmb && lm[8].y > lm[5].y) return ['p', 80];
+    if (imSpread && !tmb) return ['v', 90];
+    return ['u', 88];
+  }
+
+  // Index only
+  if (idx && !mid && !ring && !pink) {
+    if (thumbMidTouch || thumbRingTouch) return ['d', 86];
+    if (tmb && isHorizontal)  return ['g', 82];
+    if (tmb && !isHorizontal) return ['l', 88];
+    if (!tmb) return ['d', 80];
+  }
+
+  // Pinky only
+  if (!idx && !mid && !ring && pink) {
+    if (tmb)  return ['y', 90];
+    return ['i', 88];
+  }
+
+  // No fingers extended - closed fist
   if (extCount === 0) {
-    if (touching(lm, 4, 8, 0.10) && touching(lm, 4, 12, 0.12)) return ['o', 86];
-    if (thumbSide && !thumbUp) return ['a', 84];
-    if (dist2(lm[4], lm[6]) < 0.08) return ['t', 80];
-    if (lm[4].y > lm[7].y && dist2(lm[4], lm[7]) < 0.12) return ['n', 78];
-    if (lm[4].y > lm[11].y && dist2(lm[4], lm[10]) < 0.14) return ['m', 76];
-    if (lm[8].y > lm[5].y * 0.95 && lm[12].y > lm[9].y * 0.95) return ['e', 80];
-    if (thumbUp && dist2(lm[4], lm[8]) < 0.12) return ['s', 82];
+    if (thumbIdxTouch && thumbMidTouch) return ['o', 86];
+    if (thumbIdxTouch) return ['f', 84];
+    if (dist2(lm[4], lm[6]) < 0.07)  return ['t', 82];
+    if (dist2(lm[4], lm[7]) < 0.10 && lm[4].y > lm[7].y) return ['n', 80];
+    if (dist2(lm[4], lm[10]) < 0.12 && lm[4].y > lm[10].y) return ['m', 78];
+    // A vs S vs E
+    if (thumbSide && lm[4].y < lm[8].y) return ['a', 88];
+    if (!thumbSide && lm[4].y < lm[8].y) return ['s', 84];
+    if (lm[8].y > lm[5].y && lm[12].y > lm[9].y) return ['e', 82];
     return ['a', 74];
   }
 
+  // F - middle ring pink up, thumb+index touch
   if (!idx && mid && ring && pink && thumbIdxTouch) return ['f', 86];
-  if (idx && !mid && !ring && !pink && tmb && lm[8].y > lm[5].y + 0.1) return ['q', 76];
+
+  // Q
+  if (idx && !mid && !ring && !pink && tmb && lm[8].y > lm[5].y + 0.1) return ['q', 78];
+
+  // X
+  if (!idx && !mid && !ring && !pink && dist2(lm[8], lm[6]) < 0.06) return ['x', 74];
+
   return ['nothing', 0];
 }
 
