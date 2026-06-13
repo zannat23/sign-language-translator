@@ -1,6 +1,24 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Hands } from '@mediapipe/hands';
 
+const playHappySound = () => {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const notes = [523, 659, 784];
+  notes.forEach((freq, i) => {
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + i * 0.08);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4 + i * 0.08);
+    oscillator.start(audioCtx.currentTime + i * 0.08);
+    oscillator.stop(audioCtx.currentTime + 0.5 + i * 0.08);
+  });
+};
+
 const CONFIRM_FRAMES = 7;
 const COOLDOWN_MS = 3500;
 
@@ -42,16 +60,13 @@ function classifyASL(lm) {
   const handHeight = dist2(lm[0], lm[9]);
   const isHorizontal = handWidth > handHeight * 1.1;
 
-  // All 4 fingers extended
   if (extCount === 4 && tmb)  return ['space', 90];
   if (extCount === 4 && !tmb && !imSpread) return ['b', 90];
   if (extCount === 4 && !tmb && imSpread)  return ['space', 85];
 
-  // 3 fingers
   if (idx && mid && ring && !pink && !tmb) return ['w', 88];
   if (idx && mid && ring && !pink && tmb)  return ['w', 85];
 
-  // 2 fingers
   if (idx && mid && !ring && !pink) {
     if (idxMidTouch)  return ['r', 84];
     if (isHorizontal && !tmb) return ['h', 84];
@@ -61,7 +76,6 @@ function classifyASL(lm) {
     return ['u', 88];
   }
 
-  // Index only
   if (idx && !mid && !ring && !pink) {
     if (thumbMidTouch || thumbRingTouch) return ['d', 86];
     if (tmb && isHorizontal)  return ['g', 82];
@@ -69,33 +83,25 @@ function classifyASL(lm) {
     if (!tmb) return ['d', 80];
   }
 
-  // Pinky only
   if (!idx && !mid && !ring && pink) {
     if (tmb)  return ['y', 90];
     return ['i', 88];
   }
 
-  // No fingers extended - closed fist
   if (extCount === 0) {
     if (thumbIdxTouch && thumbMidTouch) return ['o', 86];
     if (thumbIdxTouch) return ['f', 84];
     if (dist2(lm[4], lm[6]) < 0.07)  return ['t', 82];
     if (dist2(lm[4], lm[7]) < 0.10 && lm[4].y > lm[7].y) return ['n', 80];
     if (dist2(lm[4], lm[10]) < 0.12 && lm[4].y > lm[10].y) return ['m', 78];
-    // A vs S vs E
     if (thumbSide && lm[4].y < lm[8].y) return ['a', 88];
     if (!thumbSide && lm[4].y < lm[8].y) return ['s', 84];
     if (lm[8].y > lm[5].y && lm[12].y > lm[9].y) return ['e', 82];
     return ['a', 74];
   }
 
-  // F - middle ring pink up, thumb+index touch
   if (!idx && mid && ring && pink && thumbIdxTouch) return ['f', 86];
-
-  // Q
   if (idx && !mid && !ring && !pink && tmb && lm[8].y > lm[5].y + 0.1) return ['q', 78];
-
-  // X
   if (!idx && !mid && !ring && !pink && dist2(lm[8], lm[6]) < 0.06) return ['x', 74];
 
   return ['nothing', 0];
@@ -134,11 +140,15 @@ function Detect() {
       lastAddedSignRef.current = detectedSign;
       lastAddedTimeRef.current = now;
       signBufferRef.current = [];
-      if (detectedSign === 'space') setText(p => p + ' ');
-      else if (detectedSign === 'del') setText(p => p.slice(0, -1));
-      else {
+      if (detectedSign === 'space') {
+        setText(p => p + ' ');
+        playHappySound();
+      } else if (detectedSign === 'del') {
+        setText(p => p.slice(0, -1));
+      } else {
         setText(p => p + detectedSign.toUpperCase());
         setHistory(h => [{ sign: detectedSign.toUpperCase(), time: new Date().toLocaleTimeString() }, ...h.slice(0, 9)]);
+        playHappySound();
       }
     }
   }, []);
