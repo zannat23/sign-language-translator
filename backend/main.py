@@ -48,8 +48,9 @@ hands = mp_hands.Hands(
 executor = ThreadPoolExecutor(max_workers=2)
 
 print("Warming up...")
-dummy = np.zeros((1, 224, 224, 3), dtype=np.float32)
-model.predict(dummy, verbose=0)
+for _ in range(3):
+    dummy = np.zeros((1, 224, 224, 3), dtype=np.float32)
+    model.predict(dummy, verbose=0)
 print("Ready!")
 
 def predict_sign(image_bytes):
