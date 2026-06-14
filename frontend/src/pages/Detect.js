@@ -32,7 +32,6 @@ function classifyASL(lm) {
   const thumbIdxTouch  = touching(lm, 4, 8,  0.08);
   const thumbMidTouch  = touching(lm, 4, 12, 0.09);
   const thumbRingTouch = touching(lm, 4, 16, 0.10);
-  const thumbPinkTouch = touching(lm, 4, 20, 0.10);
   const idxMidTouch    = touching(lm, 8, 12, 0.07);
 
   const thumbSide = lm[4].x < lm[3].x;
