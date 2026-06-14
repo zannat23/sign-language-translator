@@ -3,12 +3,12 @@ import React, { useState } from 'react';
 const aslSigns = [
   { letter: 'A', description: 'Closed fist, thumb rests on side of index finger' },
   { letter: 'B', description: 'Four fingers up straight, thumb tucked across palm' },
-  { letter: 'C', description: 'Curved hand forming letter C shape, thumb and fingers curved' },
+  { letter: 'C', description: 'Curved hand forming letter C shape' },
   { letter: 'D', description: 'Index finger up, other fingers touch thumb forming circle' },
   { letter: 'E', description: 'Fingers bent down, thumb tucked under fingers' },
   { letter: 'F', description: 'Thumb and index touch, other three fingers up and spread' },
   { letter: 'G', description: 'Index finger and thumb point sideways horizontally' },
-  { letter: 'H', description: 'Index and middle finger extended horizontally side by side' },
+  { letter: 'H', description: 'Index and middle finger extended horizontally' },
   { letter: 'I', description: 'Pinky finger up, all other fingers closed' },
   { letter: 'J', description: 'Pinky up then draw J shape in air (motion sign)' },
   { letter: 'K', description: 'Index up, middle finger angled, thumb between them' },
@@ -22,13 +22,11 @@ const aslSigns = [
   { letter: 'S', description: 'Closed fist, thumb wrapped over fingers' },
   { letter: 'T', description: 'Thumb inserted between index and middle finger' },
   { letter: 'U', description: 'Index and middle finger up together, side by side' },
-  { letter: 'V', description: 'Index and middle finger up and spread apart — V shape' },
-  { letter: 'W', description: 'Three fingers up and spread — index, middle, ring' },
+  { letter: 'V', description: 'Index and middle finger up and spread apart' },
+  { letter: 'W', description: 'Three fingers up and spread' },
   { letter: 'X', description: 'Index finger hooked/bent like a hook' },
   { letter: 'Y', description: 'Thumb and pinky extended out, other fingers closed' },
   { letter: 'Z', description: 'Index finger draws Z shape in air (motion sign)' },
-  { letter: 'SPACE', description: 'Open hand — all five fingers extended and spread' },
-  { letter: 'DEL', description: 'Delete last letter — specific gesture' },
 ];
 
 function ASLGuide() {
@@ -72,15 +70,16 @@ function ASLGuide() {
           borderRadius: '12px', padding: '24px', marginBottom: '24px',
           display: 'flex', alignItems: 'center', gap: '24px'
         }}>
-          <div style={{
-            width: '80px', height: '80px', borderRadius: '12px',
-            background: 'rgba(45,212,191,0.15)', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            fontSize: '48px', fontWeight: '700', color: 'var(--accent)',
-            flexShrink: 0
-          }}>
-            {selected.letter}
-          </div>
+          <img
+            src={`/asl-images/${selected.letter.toLowerCase()}.png`}
+            alt={`ASL sign for ${selected.letter}`}
+            style={{
+              width: '120px', height: '120px', objectFit: 'contain',
+              borderRadius: '12px', background: 'white', padding: '8px',
+              flexShrink: 0
+            }}
+            onError={e => { e.target.style.display = 'none'; }}
+          />
           <div>
             <div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>
               Sign — {selected.letter}
@@ -112,7 +111,7 @@ function ASLGuide() {
       {/* Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
         gap: '12px'
       }}>
         {filtered.map((s, i) => (
@@ -122,15 +121,27 @@ function ASLGuide() {
             style={{
               background: selected?.letter === s.letter ? 'rgba(45,212,191,0.15)' : 'var(--bg2)',
               border: selected?.letter === s.letter ? '1px solid var(--accent)' : '1px solid var(--border)',
-              borderRadius: '12px', padding: '20px 12px',
+              borderRadius: '12px', padding: '16px 12px',
               textAlign: 'center', cursor: 'pointer',
               transition: 'all 0.2s',
             }}
           >
+            <img
+              src={`/asl-images/${s.letter.toLowerCase()}.png`}
+              alt={`ASL ${s.letter}`}
+              style={{
+                width: '80px', height: '80px', objectFit: 'contain',
+                borderRadius: '8px', background: 'white', padding: '4px',
+                marginBottom: '8px'
+              }}
+              onError={e => {
+                e.target.style.display = 'none';
+              }}
+            />
             <div style={{
-              fontSize: '36px', fontWeight: '700',
+              fontSize: '20px', fontWeight: '700',
               color: selected?.letter === s.letter ? 'var(--accent)' : 'var(--text1)',
-              marginBottom: '8px'
+              marginBottom: '4px'
             }}>
               {s.letter}
             </div>
@@ -143,10 +154,7 @@ function ASLGuide() {
               {s.description}
             </div>
             {(s.letter === 'J' || s.letter === 'Z') && (
-              <div style={{
-                marginTop: '6px', fontSize: '9px',
-                color: 'var(--accent2)'
-              }}>
+              <div style={{ marginTop: '4px', fontSize: '9px', color: 'var(--accent2)' }}>
                 ⚡ Motion
               </div>
             )}
