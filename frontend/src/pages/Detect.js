@@ -163,6 +163,7 @@ function Detect() {
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState('Click "Start Camera" to begin');
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -307,6 +308,12 @@ function Detect() {
   const speak = () => { if (text) window.speechSynthesis.speak(new SpeechSynthesisUtterance(text)); };
   useEffect(() => () => stopCamera(), [stopCamera]);
   const getConfColor = c => c > 80 ? 'var(--accent)' : c > 60 ? 'var(--accent2)' : '#EF4444';
+  const copyText = () => {
+  if (!text) return;
+  navigator.clipboard.writeText(text);
+  setCopied(true);
+  setTimeout(() => setCopied(false), 2000);
+};
 
   return (
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -353,7 +360,9 @@ function Detect() {
               {loading ? 'Loading…' : running ? 'Stop Camera' : 'Start Camera'}
             </button>
             <button onClick={() => setText('')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text1)', fontSize: '14px' }}>Clear Text</button>
-            <button onClick={speak} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--accent2)', fontSize: '14px' }}>🔊 Speak</button>
+            <button onClick={copyText} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: copied ? 'var(--accent)' : 'transparent', color: copied ? 'var(--bg1)' : 'var(--text1)', fontSize: '14px', transition: 'all 0.3s' }}>
+              {copied ? '✓ Copied!' : '📋 Copy'}
+              </button>
           </div>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginTop: '16px' }}>
             <div style={{ fontSize: '11px', color: 'var(--text2)', letterSpacing: '2px', marginBottom: '10px' }}>TRANSLATION OUTPUT</div>
