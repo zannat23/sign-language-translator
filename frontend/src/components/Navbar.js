@@ -8,6 +8,7 @@ function Navbar() {
   const links = [
     { name: 'Home', path: '/' },
     { name: 'Detect', path: '/detect' },
+    { name: 'Guide', path: '/guide' },
     { name: 'About', path: '/about' },
   ];
 

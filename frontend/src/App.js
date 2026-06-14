@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Detect from './pages/Detect';
 import About from './pages/About';
+import ASLGuide from './pages/ASLGuide';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/detect" element={<Detect />} />
           <Route path="/about" element={<About />} />
+          <Route path="/guide" element={<ASLGuide />} />
         </Routes>
       </div>
     </Router>
