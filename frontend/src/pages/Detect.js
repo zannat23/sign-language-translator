@@ -40,15 +40,6 @@ function classifyASL(lm) {
   const handHeight = dist2(lm[0], lm[9]);
   const isHorizontal = handWidth > handHeight * 1.1;
 
-  // Thumb tip positions
-  const thumbTipY = lm[4].y;
-  const thumbTipX = lm[4].x;
-  const wristY = lm[0].y;
-  const indexMcpY = lm[5].y;
-  const indexMcpX = lm[5].x;
-  const pinkyMcpX = lm[17].x;
-
-  // C — curved hand, all fingers slightly bent, thumb open
   const idxPartial = dist3(lm[8], lm[0]) > dist3(lm[6], lm[0]) * 0.8 &&
                      dist3(lm[8], lm[0]) < dist3(lm[6], lm[0]) * 1.3;
   const midPartial = dist3(lm[12], lm[0]) > dist3(lm[10], lm[0]) * 0.8 &&
@@ -56,20 +47,13 @@ function classifyASL(lm) {
   const cShape = idxPartial && midPartial && !thumbIdxTouch && tmb;
   if (cShape && extCount <= 2) return ['c', 82];
 
-  // SPACE — all 4 fingers + thumb extended
   if (extCount === 4 && tmb) return ['space', 90];
-
-  // B — 4 fingers up, thumb tucked, fingers together
   if (extCount === 4 && !tmb && !imSpread) return ['b', 90];
-
-  // 4 fingers spread = space
   if (extCount === 4 && !tmb && imSpread) return ['space', 85];
 
-  // W — 3 fingers
   if (idx && mid && ring && !pink && !tmb) return ['w', 88];
   if (idx && mid && ring && !pink && tmb)  return ['w', 85];
 
-  // 2 fingers
   if (idx && mid && !ring && !pink) {
     if (idxMidTouch)  return ['r', 84];
     if (isHorizontal && !tmb) return ['h', 84];
@@ -79,72 +63,42 @@ function classifyASL(lm) {
     return ['u', 88];
   }
 
-  // Index only
   if (idx && !mid && !ring && !pink) {
-    // G — index pointing sideways + thumb out horizontal
     if (tmb && isHorizontal && lm[8].x < lm[5].x) return ['g', 84];
     if (tmb && isHorizontal) return ['g', 82];
-    // L — index up + thumb out
     if (tmb && !isHorizontal) return ['l', 88];
-    // D — index up, thumb touches middle
     if (thumbMidTouch || thumbRingTouch) return ['d', 86];
     return ['d', 80];
   }
 
-  // Pinky only
   if (!idx && !mid && !ring && pink) {
-    // Y — pinky + thumb
     if (tmb) return ['y', 90];
-    // I — pinky only, no thumb
     return ['i', 90];
   }
 
-  // Index + Pinky (no mid, no ring)
   if (idx && !mid && !ring && pink) {
-    return ['i', 80]; // could be ILY but treat as i
+    return ['i', 80];
   }
 
-  // Closed fist
   if (extCount === 0) {
-    // O — thumb and index touch making circle
     if (thumbIdxTouch && !thumbMidTouch) return ['o', 88];
-
-    // F — thumb + index touch, rest up
     if (thumbIdxTouch && mid && ring && pink) return ['f', 86];
-
-    // T — thumb between index and middle
     if (dist2(lm[4], lm[6]) < 0.07) return ['t', 84];
-
-    // N — thumb over middle finger
-    if (dist2(lm[4], lm[10]) < 0.09 && lm[4].y > lm[9].y &&
-        lm[4].y < lm[7].y) return ['n', 82];
-
-    // M — thumb over ring/middle (3 fingers over thumb)
+    if (dist2(lm[4], lm[10]) < 0.09 && lm[4].y > lm[9].y && lm[4].y < lm[7].y) return ['n', 82];
     if (dist2(lm[4], lm[14]) < 0.10 && lm[4].y > lm[13].y) return ['m', 80];
-
-    // X — hooked index finger
     if (dist2(lm[8], lm[6]) < 0.06 && !idx) return ['x', 78];
-
-    // A — thumb to side, fist
     if (thumbSide && lm[4].y < lm[8].y && !thumbIdxTouch) return ['a', 88];
-
-    // S — thumb over fingers
     if (!thumbSide && lm[4].y < lm[9].y) return ['s', 84];
-
-    // E — fingers bent, thumb tucked under
     if (lm[8].y > lm[5].y && lm[12].y > lm[9].y && lm[4].y > lm[8].y) return ['e', 82];
-
     return ['a', 70];
   }
 
-  // F — middle ring pink up, thumb+index touch
   if (!idx && mid && ring && pink && thumbIdxTouch) return ['f', 86];
-
-  // Q — index pointing down + thumb
   if (idx && !mid && !ring && !pink && tmb && lm[8].y > lm[5].y + 0.1) return ['q', 78];
 
   return ['nothing', 0];
 }
+
 function Detect() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -164,6 +118,7 @@ function Detect() {
   const [status, setStatus] = useState('Click "Start Camera" to begin');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [signCount, setSignCount] = useState(0);
 
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -219,6 +174,7 @@ function Detect() {
         setText(p => p.slice(0, -1));
       } else {
         setText(p => p + detectedSign.toUpperCase());
+        setSignCount(p => p + 1);
         setHistory(h => [{ sign: detectedSign.toUpperCase(), time: new Date().toLocaleTimeString() }, ...h.slice(0, 9)]);
         playHappySound();
       }
@@ -306,22 +262,26 @@ function Detect() {
   }, []);
 
   const speak = () => { if (text) window.speechSynthesis.speak(new SpeechSynthesisUtterance(text)); };
+
+  const copyText = () => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   useEffect(() => () => stopCamera(), [stopCamera]);
   const getConfColor = c => c > 80 ? 'var(--accent)' : c > 60 ? 'var(--accent2)' : '#EF4444';
-  const copyText = () => {
-  if (!text) return;
-  navigator.clipboard.writeText(text);
-  setCopied(true);
-  setTimeout(() => setCopied(false), 2000);
-};
 
   return (
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: running ? 'var(--accent)' : loading ? 'var(--accent2)' : 'var(--text2)', animation: loading ? 'pulse 1s infinite' : 'none' }} />
         <span style={{ fontSize: '13px', color: 'var(--text2)' }}>{status}</span>
-        {landmarks && <span style={{ fontSize: '11px', color: 'var(--accent)', marginLeft: 'auto' }}>✓ Hand detected</span>}
+        {running && <span style={{ fontSize: '11px', color: 'var(--accent2)', marginLeft: 'auto' }}>Signs: {signCount}</span>}
+        {landmarks && <span style={{ fontSize: '11px', color: 'var(--accent)', marginLeft: running ? '12px' : 'auto' }}>✓ Hand detected</span>}
       </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '24px' }}>
         <div>
           <div style={{ background: '#000', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', position: 'relative', aspectRatio: '4/3' }}>
@@ -352,18 +312,28 @@ function Detect() {
             ))}
             {running && <div style={{ position: 'absolute', top: '12px', right: '40px', fontSize: '11px', color: 'var(--accent)', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px' }}>● LIVE</div>}
           </div>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
             <button
               onClick={() => { initAudio(); running ? stopCamera() : startCamera(); }}
               disabled={loading}
-              style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: running ? '#EF4444' : 'var(--accent)', color: running ? '#fff' : 'var(--bg1)', fontSize: '14px', fontWeight: '600', opacity: loading ? 0.6 : 1 }}>
+              style={{ padding: '12px', borderRadius: '8px', border: 'none', background: running ? '#EF4444' : 'var(--accent)', color: running ? '#fff' : 'var(--bg1)', fontSize: '14px', fontWeight: '600', opacity: loading ? 0.6 : 1 }}>
               {loading ? 'Loading…' : running ? 'Stop Camera' : 'Start Camera'}
             </button>
-            <button onClick={() => setText('')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text1)', fontSize: '14px' }}>Clear Text</button>
-            <button onClick={copyText} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: copied ? 'var(--accent)' : 'transparent', color: copied ? 'var(--bg1)' : 'var(--text1)', fontSize: '14px', transition: 'all 0.3s' }}>
+            <button onClick={() => { setText(''); setSignCount(0); }}
+              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text1)', fontSize: '14px' }}>
+              Clear Text
+            </button>
+            <button onClick={speak}
+              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--accent2)', fontSize: '14px' }}>
+              🔊 Speak
+            </button>
+            <button onClick={copyText}
+              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: copied ? 'var(--accent)' : 'transparent', color: copied ? 'var(--bg1)' : 'var(--text1)', fontSize: '14px', transition: 'all 0.3s' }}>
               {copied ? '✓ Copied!' : '📋 Copy'}
-              </button>
+            </button>
           </div>
+
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginTop: '16px' }}>
             <div style={{ fontSize: '11px', color: 'var(--text2)', letterSpacing: '2px', marginBottom: '10px' }}>TRANSLATION OUTPUT</div>
             <div style={{ fontSize: '24px', fontWeight: '500', letterSpacing: '3px', minHeight: '40px', color: 'var(--text1)' }}>
@@ -372,6 +342,7 @@ function Detect() {
             </div>
           </div>
         </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
             <div style={{ fontSize: '11px', color: 'var(--text2)', letterSpacing: '2px', marginBottom: '8px' }}>DETECTED SIGN</div>
@@ -385,6 +356,7 @@ function Detect() {
               </div>
             )}
           </div>
+
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px' }}>
             <div style={{ fontSize: '11px', color: 'var(--text2)', letterSpacing: '2px', marginBottom: '10px' }}>TIPS</div>
             <div style={{ fontSize: '12px', color: 'var(--text2)', lineHeight: '1.7' }}>
@@ -394,6 +366,7 @@ function Detect() {
               • Open hand = <strong style={{ color: 'var(--text1)' }}>SPACE</strong>
             </div>
           </div>
+
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', flex: 1 }}>
             <div style={{ fontSize: '11px', color: 'var(--text2)', letterSpacing: '2px', marginBottom: '12px' }}>HISTORY</div>
             {history.length > 0 ? history.map((h, i) => (
