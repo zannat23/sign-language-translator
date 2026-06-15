@@ -5,16 +5,16 @@ function Home() {
   const navigate = useNavigate();
 
   const stats = [
-    { val: '96.4%', label: 'Model Accuracy', accent: true },
-    { val: '29', label: 'ASL Sign Classes', accent: false },
-    { val: '30+', label: 'FPS Real-time', accent: true },
-    { val: '5', label: 'Days to Build', accent: false },
+    { val: '99%+', label: 'Model Accuracy', accent: true },
+    { val: '30', label: 'ASL Sign Classes', accent: false },
+    { val: '300ms', label: 'Response Time', accent: true },
+    { val: '2', label: 'Datasets Combined', accent: false },
   ];
 
   const features = [
-    { icon: '🧠', title: 'MobileNetV2', desc: 'Transfer learning on 87K ASL images' },
+    { icon: '🧠', title: 'MobileNetV2', desc: 'Transfer learning on 74K+ ASL images' },
     { icon: '🖐️', title: 'MediaPipe', desc: '21-point hand landmark detection' },
-    { icon: '⚡', title: 'FastAPI + WebSocket', desc: 'Sub-100ms real-time inference' },
+    { icon: '⚡', title: 'FastAPI + WebSocket', desc: 'Sub-300ms real-time inference' },
     { icon: '🔊', title: 'Text-to-Speech', desc: 'Web Speech API audio output' },
   ];
 
@@ -47,7 +47,7 @@ function Home() {
           </h1>
 
           <p style={{ fontSize: '15px', color: 'var(--text2)', lineHeight: '1.7', marginBottom: '28px' }}>
-            MobileNetV2 + MediaPipe powered system that detects 29 ASL signs via webcam and converts them to text and speech instantly.
+            MobileNetV2 + MediaPipe powered system that detects 30 ASL signs via webcam and converts them to text and speech instantly.
           </p>
 
           <div style={{ display: 'flex', gap: '12px' }}>
