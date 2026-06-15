@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-native';
+import { useNavigate } from 'react-router-dom';
 
 function useCountUp(target, duration = 2000) {
   const [count, setCount] = useState(0);
