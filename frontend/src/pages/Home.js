@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-native';
 
 function useCountUp(target, duration = 2000) {
   const [count, setCount] = useState(0);
@@ -25,7 +25,6 @@ function useCountUp(target, duration = 2000) {
 
 function Home() {
   const navigate = useNavigate();
-  const [hoveredFeature, setHoveredFeature] = useState(null);
   const [hoveredStep, setHoveredStep] = useState(null);
   const [acc, accRef] = useCountUp(99);
   const [classes, classRef] = useCountUp(30);
@@ -39,11 +38,11 @@ function Home() {
     { icon: '💬', title: 'Translate', desc: 'Text appears and speech output is generated' },
   ];
 
-  const features = [
-    { icon: '🧠', title: 'MobileNetV2', desc: 'Transfer learning on 74K+ ASL images — 99%+ accuracy' },
-    { icon: '🖐️', title: 'MediaPipe', desc: '21-point hand landmark detection in real-time' },
-    { icon: '⚡', title: 'FastAPI + WebSocket', desc: 'Persistent connection — sub-300ms inference' },
-    { icon: '🔊', title: 'Text-to-Speech', desc: 'Web Speech API — instant audio output' },
+  const impacts = [
+    { val: '466M', label: 'People with hearing loss worldwide', icon: '🌍', accent: true },
+    { val: '1%', label: 'Hearing people who understand sign language', icon: '😔', accent: false },
+    { val: '74K+', label: 'Images used for training our model', icon: '🖼️', accent: true },
+    { val: '99%+', label: 'Model accuracy on validation dataset', icon: '🎯', accent: false },
   ];
 
   return (
@@ -90,7 +89,6 @@ function Home() {
                 border: 'none', padding: '13px 32px',
                 borderRadius: '8px', fontSize: '14px', fontWeight: '700',
                 cursor: 'pointer', boxShadow: '0 0 20px rgba(45,212,191,0.3)',
-                transition: 'all 0.2s'
               }}
             >
               🎯 Try Live Demo
@@ -101,7 +99,6 @@ function Home() {
                 background: 'transparent', color: 'var(--text1)',
                 border: '1px solid var(--border)', padding: '13px 32px',
                 borderRadius: '8px', fontSize: '14px', cursor: 'pointer',
-                transition: 'all 0.2s'
               }}
             >
               📚 ASL Guide
@@ -121,7 +118,6 @@ function Home() {
               background: 'var(--bg2)', border: '1px solid var(--border)',
               borderRadius: '12px', padding: '24px',
               borderTop: s.accent ? '2px solid var(--accent)' : '1px solid var(--border)',
-              transition: 'transform 0.2s',
             }}>
               <div style={{ fontSize: '32px', fontWeight: '700', color: s.accent ? 'var(--accent)' : 'var(--text1)' }}>
                 {s.val}{s.suffix}
@@ -175,32 +171,28 @@ function Home() {
         </div>
       </div>
 
-      {/* Features */}
-      <div style={{ padding: '48px 0' }}>
+      {/* Impact Section */}
+      <div style={{ padding: '48px 0', borderBottom: '1px solid var(--border)' }}>
         <div style={{ fontSize: '11px', color: 'var(--accent)', letterSpacing: '3px', fontWeight: '600', marginBottom: '8px' }}>
-          TECH STACK
+          WHY IT MATTERS
         </div>
         <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '32px' }}>
-          Built with cutting-edge technology
+          Real world impact
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          {features.map((f, i) => (
-            <div
-              key={i}
-              onMouseEnter={() => setHoveredFeature(i)}
-              onMouseLeave={() => setHoveredFeature(null)}
-              style={{
-                background: hoveredFeature === i ? 'rgba(45,212,191,0.08)' : 'var(--bg2)',
-                border: hoveredFeature === i ? '1px solid var(--accent)' : '1px solid var(--border)',
-                borderRadius: '12px', padding: '24px',
-                borderTop: i === 0 ? '2px solid var(--accent)' : hoveredFeature === i ? '2px solid var(--accent)' : '1px solid var(--border)',
-                transition: 'all 0.3s', cursor: 'default',
-                transform: hoveredFeature === i ? 'translateY(-4px)' : 'translateY(0)',
-              }}
-            >
-              <div style={{ fontSize: '28px', marginBottom: '12px' }}>{f.icon}</div>
-              <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px' }}>{f.title}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text2)', lineHeight: '1.6' }}>{f.desc}</div>
+          {impacts.map((item, i) => (
+            <div key={i} style={{
+              background: 'var(--bg2)', border: '1px solid var(--border)',
+              borderRadius: '12px', padding: '24px', textAlign: 'center',
+              borderTop: item.accent ? '2px solid var(--accent)' : '1px solid var(--border)',
+            }}>
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>{item.icon}</div>
+              <div style={{ fontSize: '28px', fontWeight: '700', color: item.accent ? 'var(--accent)' : 'var(--accent2)', marginBottom: '8px' }}>
+                {item.val}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text2)', lineHeight: '1.5' }}>
+                {item.label}
+              </div>
             </div>
           ))}
         </div>
@@ -208,7 +200,7 @@ function Home() {
 
       {/* CTA Bottom */}
       <div style={{
-        padding: '48px', marginBottom: '48px',
+        padding: '48px', margin: '48px 0',
         background: 'linear-gradient(135deg, rgba(45,212,191,0.08), rgba(245,158,11,0.05))',
         border: '1px solid var(--border)', borderRadius: '16px',
         textAlign: 'center'
